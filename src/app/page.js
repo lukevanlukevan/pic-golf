@@ -1,40 +1,47 @@
-import fs from "fs/promises";
-import Image from "next/image";
-import path from "path";
+import Image from "next/image"
 
 async function Home() {
-  let filePaths = [];
-  let error = null;
-
-  let currentDate = new Date().toJSON().slice(0, 10).split("-").join("");
-  const diskPath = "D:/Code/pic-golf/public/" + currentDate;
+  let filePaths = []
+  let error = null
+  var currentDate = new Date().toJSON().slice(0, 10).split("-").join("")
+  currentDate = "20250909" // Uncomment for testing a specific date
 
   try {
-    // Resolve the absolute path relative to the project root
-    const resolvedPath = path.join(diskPath);
-    const files = await fs.readdir(resolvedPath);
-    filePaths = files.map((file) => {
-      console.log(currentDate);
-      const out = "/" + currentDate + "/" + file;
-      const time = file.split("_")[0];
-      const hr = (parseInt(time.substring(0, 2)) + 1).toString();
-      const min = time.substring(2, 4);
-      const sec = time.substring(4, 7);
-      const outTime = `${hr}:${min}:${sec}`;
-      return [out, outTime];
-      // path.join(diskPath, file);
-    });
+    const response = await fetch("http://localhost:8000/images", {
+      next: { revalidate: 10 }, // ISR: Revalidate every 10 seconds
+    })
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`)
+    }
+    const images = await response.json()
+
+    // Filter by current date (optional; remove filter to show all images)
+    const filteredImages = images.filter((img) => img.date === currentDate)
+
+    filePaths = filteredImages.map((img) => {
+      // Parse time from filename (e.g., "123456_hole_tag.jpg" -> "12:34:56")
+      const time = img.filename.split("_")[0]
+      const hr = (parseInt(time.substring(0, 2)) + 1)
+        .toString()
+        .padStart(2, "0")
+      const min = time.substring(2, 4)
+      const sec = time.substring(4, 6)
+      const outTime = `${hr}:${min}:${sec}`
+      const name = img.tag // Tag from API
+      const url = `http://localhost:8000${img.url}` // Full URL for image
+      return [url, outTime, name]
+    })
   } catch (err) {
-    error = err.message;
+    error = err.message
   }
 
   if (error) {
     return (
       <div>
-        <h2>Error reading files from {diskPath}</h2>
+        <h2>Error fetching images</h2>
         <p>{error}</p>
       </div>
-    );
+    )
   }
 
   return (
@@ -43,22 +50,30 @@ async function Home() {
         return (
           <div
             key={index}
-            className="holder p-4 outline-1 rounded-2xl outline-white/10"
+            className="holder p-4 outline-1 rounded-2xl outline-foreground/10"
           >
-            <span className="font-medium font-mono">{file[1]}</span>
+            <div className="class flex gap-2 font-mono">
+              <span className="font-medium">{file[1]}</span>
+              <div
+                className="bg-foreground rounded-full text-background px-2 font-medium"
+                // onClick={() => setFilter(file[2])}
+              >
+                {file[2]}
+              </div>
+            </div>
             <Image
               className="rounded-md mt-2"
               key={index}
               src={file[0]}
               height={1000}
               width={1000}
-              alt="fooo"
+              alt="Golf image"
             />
           </div>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
 
-export default Home;
+export default Home
