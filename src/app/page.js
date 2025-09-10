@@ -4,10 +4,10 @@ async function Home() {
   let filePaths = []
   let error = null
   var currentDate = new Date().toJSON().slice(0, 10).split("-").join("")
-  currentDate = "20250909" // Uncomment for testing a specific date
+  // currentDate = "20250909" // Uncomment for testing a specific date
 
   try {
-    const response = await fetch("http://localhost:8000/images", {
+    const response = await fetch("http://192.168.9.231:8000/images", {
       next: { revalidate: 10 }, // ISR: Revalidate every 10 seconds
     })
     if (!response.ok) {
@@ -28,7 +28,7 @@ async function Home() {
       const sec = time.substring(4, 6)
       const outTime = `${hr}:${min}:${sec}`
       const name = img.tag // Tag from API
-      const url = `http://localhost:8000${img.url}` // Full URL for image
+      const url = `http://192.168.9.231:8000${img.url}` // Full URL for image
       return [url, outTime, name]
     })
   } catch (err) {
